@@ -36,6 +36,7 @@ global {
 	reflex generate_food when: cycle mod 1 = 0 {
 		create food number: food_rnd;
 	}
+
 }
 
 species cell skills: [moving] {
@@ -113,6 +114,10 @@ species cell skills: [moving] {
 		create cell number:1 with: (location: self.location+{rnd (5), rnd (5)});
 	}
 	
+	reflex reset when: (cycle mod 2000 = 0 and cycle != 0 and flip(0.95)){
+		do die;
+	}
+	
 	reflex calculate_frequency { //this reflex calculates the frequency absorption of the hormons 
 		if length(memory) = 11 {
 			list<int> periods <- [];
@@ -154,6 +159,10 @@ species food skills: [moving]{//we use the food agent to aggregate cells; it's v
 		do die;
 	}
 	
+	reflex reset when: cycle mod 2000 = 0{
+		do die;
+	}
+	
 }
 
 species hormone skills: [moving]{
@@ -177,6 +186,10 @@ species hormone skills: [moving]{
 	}
 	
 	reflex out_of_board when: location.x <= 1 or location.x >= world_dimension - 1 or location.y <= 1 or location.y >= world_dimension - 1{
+		do die;
+	}
+	
+	reflex reset when: cycle mod 2000 = 0{
 		do die;
 	}
 	
