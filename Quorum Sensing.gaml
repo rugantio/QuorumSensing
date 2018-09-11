@@ -15,27 +15,25 @@ model QuorumSensing
 global {
 	/* Global variables */
 	int world_dimension <- 300 parameter:"World Dimension" min:20 max:1000 category:"Global";
-	int ncell <- 200 parameter:"Number of Cells" min:25 max:3000 category:"Global";
-	int cluster_dim <- 30 parameter:"Dimension of the cluster" min:5 max:100 category:"Global";
+	int ncell <- 30 parameter:"Number of Cells" min:1 max:3000 category:"Global";
 	float alpha <- 4/5 parameter:"Spreading factor" min:0.1 max:5.0 category:"Global";
 	
 	/* Cells attributes */
 	int ray_of_perception <- 30 parameter:"Food sensing horizon" min:5 max: 100 category:"Cell";
 	int increase_of_health <- 40 parameter:"Health gained eating food" min:10 max:100 category:"Cell";
 	float lightning_threshold <- 0.05 parameter:"Bioluminescence threshold" min:0.01 max: 0.1 category:"Cell";
+	int reproducing_threshold <- 1100 parameter:"Reproducing threshold" min:1000 max: 2000 category:"Cell";
 	
 	/* Food attributes */
-	int food_cluster <- 20 parameter:"Food generated in the cluster" min:5 max:100 category:"Food";
-	int food_rnd <- 5 parameter:"Food generated randomly" min:1 max:30 category:"Food";
+	int food_rnd <- 30 parameter:"Food generated randomly" min:1 category:"Food";
 	
 	geometry shape <- square(world_dimension);
 	
-	init {
+	init{
 		create cell number: ncell with: (location: any_location_in(shape));//initial cells are created randomly in our space
 	}
 	
 	reflex generate_food when: cycle mod 1 = 0 {
-		create food number: food_cluster with: (location: any_location_in(circle(cluster_dim)));//clustering is hardcoded for now, can be switched to an emergent property later
 		create food number: food_rnd;
 	}
 }
@@ -58,8 +56,7 @@ species cell skills: [moving] {
 		dimension <- 4;
 		absorbing_frequency <- 0.0;
 		my_color <- #black;
-		max_health <- 1000;
-		health <- max_health;
+		health <- 500;
 		wandering_amplitude <- 10;
 	}
 	
@@ -77,8 +74,9 @@ species cell skills: [moving] {
 			do die;
 		}
 		health <- health + increase_of_health;
-		if health > max_health {
-			health <- max_health;
+		if health > reproducing_threshold{
+			do reproduce;
+			health <- 500;
 		}
 	}
 	
@@ -92,7 +90,7 @@ species cell skills: [moving] {
 		}
 	}
 	
-	reflex basic_memory when: flip(0.01) {
+	reflex basic_memory when: flip(0.02) {
 		add cycle to: memory;
 		if length(memory) > 1 {
 			if memory[length(memory)-2] = memory[length(memory)-1] {
@@ -104,12 +102,15 @@ species cell skills: [moving] {
 		}
 	}
 	
-	
 	reflex get_old { //cells age each cycle
 		health <- health - 1;
 		if health <= 0 {
 			do die;
 		}
+	}
+	
+	action reproduce{
+		create cell number:1 with: (location: self.location+{rnd (5), rnd (5)});
 	}
 	
 	reflex calculate_frequency { //this reflex calculates the frequency absorption of the hormons 
@@ -138,7 +139,6 @@ species cell skills: [moving] {
 	aspect base {
 		draw circle(dimension) color: my_color;
 	}
-
 }
 
 species food skills: [moving]{//we use the food agent to aggregate cells; it's very basic, they are spawned and only diffused in space
@@ -188,23 +188,24 @@ species hormone skills: [moving]{
 
 experiment quorum_sensing type:gui {
 	output {
-		display "Cell Population" type: java2D{
+			display "Cell Population" type: java2D{
 			chart "Cell Population" type: series background: #black color: #lightgreen axes: #lightgreen   size: {0.5,0.5} position: {0, 0}
-			title_font_size: 32.0 title_font_style:'italic' tick_font: 'Monospaced' tick_font_size:14 tick_font_style:'bold' x_serie_labels:cycle x_label:'Time' y_label:'Cell number'{
-				data "Regular cells" value: (list(cell) count (each.my_color=#black)) accumulate_values:true color:#white style:line marker_shape:marker_empty;
-				data "Bioluminescent cells" value: (list(cell) count (each.my_color=#cyan)) accumulate_values:true color:#red style:line marker_shape:marker_empty;
-		//		data "Classic" value: [cycle + 1, cycle] marker_shape: marker_circle color: # yellow;	
+			title_font_size: 32.0 title_font_style:'italic' tick_font: 'Monospaced' tick_font_size:14 
+			tick_font_style:'bold' x_serie_labels:cycle x_label:'Time' y_label:'Cell number'{
+			data "Total cells" value: (list(cell) count (each.health>0)) accumulate_values:true color:#red style:line marker_shape:marker_empty;
 			}
-			chart "Cell Cluster" type: series background: #black color: #lightgreen axes: #lightgreen  size: {0.5,0.5} position: {0.5, 0}
-			title_font_size: 32.0 title_font_style:'italic' tick_font: 'Monospaced' tick_font_size:14 tick_font_style:'bold' x_serie_labels:cycle x_label:'Time' y_label:'Cell number'{
-				data "Bioluminescent cells in the cluster" value: (list(cell) count (each.my_color=#cyan and (agents_inside(circle(cluster_dim))))) accumulate_values:true color:#red style:line marker_shape:marker_empty;
+			chart "Cell type" type: series background: #black color: #lightgreen axes: #lightgreen   size: {0.5,0.5} position: {0.5, 0}
+			title_font_size: 32.0 title_font_style:'italic' tick_font: 'Monospaced' tick_font_size:14 
+			tick_font_style:'bold' x_serie_labels:cycle x_label:'Time' y_label:'Cell number'{
+			data "Ordinary cells" value: (list(cell) count (each.my_color=#black)) accumulate_values:true color:#white style:line marker_shape:marker_empty;
+		 	data "Bioluminescent cells" value: (list(cell) count (each.my_color=#cyan)) accumulate_values:true color:#red style:line marker_shape:marker_empty;
 			}
+			
 		}
 		display Experiment {
 			species hormone aspect: base;
 			species cell aspect: base;
 			species food aspect: base;
+			}
 		}
-	}
 }
-
