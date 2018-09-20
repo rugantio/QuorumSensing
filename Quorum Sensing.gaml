@@ -36,6 +36,9 @@ global {
 	reflex generate_food when: cycle mod 1 = 0 {
 		create food number: food_rnd;
 	}
+	reflex save_result {
+	save ("cycle: "+ cycle + "; num of cells: " + list(cell) count (each.health>0)) to: "results.csv" type: "csv" rewrite:false;
+}
 
 }
 
@@ -204,12 +207,12 @@ experiment quorum_sensing type:gui {
 			display "Cell Population" type: java2D{
 			chart "Cell Population" type: series background: #black color: #lightgreen axes: #lightgreen   size: {0.5,0.5} position: {0, 0}
 			title_font_size: 32.0 title_font_style:'italic' tick_font: 'Monospaced' tick_font_size:14 
-			tick_font_style:'bold' x_serie_labels:cycle x_label:'Time' y_label:'Cell number'{
+			tick_font_style:'bold' x_serie_labels:cycle x_tick_unit:200 x_label:'Time' y_label:'Cell number'{
 			data "Total cells" value: (list(cell) count (each.health>0)) accumulate_values:true color:#red style:line marker_shape:marker_empty;
 			}
-			chart "Cell type" type: series background: #black color: #lightgreen axes: #lightgreen   size: {0.5,0.5} position: {0.5, 0}
+			chart "Cell type" type: series background: #black color: #lightgreen axes: #lightgreen size: {0.5,0.5} position: {0.5, 0}
 			title_font_size: 32.0 title_font_style:'italic' tick_font: 'Monospaced' tick_font_size:14 
-			tick_font_style:'bold' x_serie_labels:cycle x_label:'Time' y_label:'Cell number'{
+			tick_font_style:'bold' x_serie_labels:cycle x_tick_unit:200 x_label:'Time' y_label:'Cell number'{
 			data "Ordinary cells" value: (list(cell) count (each.my_color=#black)) accumulate_values:true color:#white style:line marker_shape:marker_empty;
 		 	data "Bioluminescent cells" value: (list(cell) count (each.my_color=#cyan)) accumulate_values:true color:#red style:line marker_shape:marker_empty;
 			}
